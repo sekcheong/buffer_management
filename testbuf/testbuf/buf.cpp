@@ -46,39 +46,129 @@ BufMgr::~BufMgr() {
 }
 
 
-const Status BufMgr::allocBuf(int & frame) {
-	// TODO: Implement this method by looking at the description in the writeup.
-	return OK;
+const Status BufMgr::allocBuf(int &frame) {
+  int pinCnt = 0;
+  frame=-1;
+  while (true) {
+    advanceClock();
+    BufDesc bd = bufTable[clockHand];
+    if (bd.valid) {
+    
+      if (bd.refbit) {
+        bd.refbit=false;
+        continue;
+      }
+    
+      if (bd.pinCnt) {
+        pinCnt++;
+        if (pinCnt==numBufs) {
+          return BUFFEREXCEEDED;
+        }
+        continue;
+      }
+    
+      if (bd.dirty) {
+        Status st = bd.file->writePage(bd.pageNo, &bufPool[bd.frameNo]);
+        if (st!=OK) {
+          return st;
+        }
+      }
+    }
+    bd.Clear();
+    frame=clockHand;
+    return OK;
+  }
+  return OK;
 }
 
 	
 const Status BufMgr::readPage(File* file, const int PageNo, Page*& page) {
-	// TODO: Implement this method by looking at the description in the writeup.
+  int frame;
+  Status st = hashTable->lookup(file, PageNo, frame);
+  if (st==HASHNOTFOUND) {
+    
+    st = this->allocBuf(frame);
+    if (st!=OK) return st;
+    
+    st = hashTable->insert(file, PageNo, frame);
+    if (st!=OK) return st;
+    BufDesc bd = bufTable[frame];
+    bd.Set(file, PageNo);
+    page = &bufPool[bd.frameNo];
+    file->readPage(PageNo, page);
+  }
+  else {
+    BufDesc bd = bufTable[frame];
+    page = &bufPool[bd.frameNo];
+    bd.pinCnt = bd.pinCnt+1;
+    bd.refbit=true;
+  }
 	return OK;
 }
 
 
-const Status BufMgr::unPinPage(File* file, const int PageNo, 
-			       const bool dirty) {
-	// TODO: Implement this method by looking at the description in the writeup.
+const Status BufMgr::unPinPage(File* file, const int PageNo, const bool dirty) {
+  int frame;
+  Status st = hashTable->lookup(file, PageNo, frame);
+  if (st!=OK) return st;
+  BufDesc bd = bufTable[frame];
+  if (bd.pinCnt==0) return PAGENOTPINNED;
+  bd.pinCnt--;
+  if (dirty) bd.dirty = true;
 	return OK;
 }
 
 
 const Status BufMgr::allocPage(File* file, int& pageNo, Page*& page)  {
-	// TODO: Implement this method by looking at the description in the writeup.
+  int newPage;
+  int newFrame;
+  Status st;
+  
+  st = file->allocatePage(newPage);
+  if (st!=OK) return st;
+  
+  st = this->allocBuf(newFrame);
+  if (st!=OK) return st;
+  
+  st = hashTable->insert(file, newPage, newFrame);
+  if (st!=OK) return st;
+  
+  pageNo = newPage;
+  bufTable[newFrame].Set(file, newPage);
+  page = &bufPool[bufTable[newFrame].frameNo];
+  
 	return OK;
 }
 
 
 const Status BufMgr::disposePage(File* file, const int pageNo) {
-	// TODO: Implement this method by looking at the description in the writeup.
+  int frame;
+  Status st = hashTable->lookup(file, pageNo, frame);
+  if (st!=OK) return st;
+  BufDesc bd = bufTable[frame];
+  bd.file->disposePage(bd.pageNo);
+  bd.Clear();
+  st = hashTable->remove(file, pageNo);
+  if (st!=OK) return st;
 	return OK;
 }
 
 
 const Status BufMgr::flushFile(const File* file) {
-	// TODO: Implement this method by looking at the description in the writeup.
+  for (int i=0; i<numBufs; i++) {
+    BufDesc bd = bufTable[i];
+    if (bd.file==file) {
+      if (bd.pinCnt!=0) {
+        return PAGEPINNED;
+      }
+      Status st = hashTable->remove(file, bd.pageNo);
+      if (bd.dirty) {
+        st = bd.file->writePage(bd.pageNo, &bufPool[bd.frameNo]);
+        if (st!=OK) return st;
+      }
+      bd.Clear();
+    }
+  }
 	return OK;
 }
 

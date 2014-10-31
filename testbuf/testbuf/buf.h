@@ -50,7 +50,7 @@ class BufDesc {
 private:
   File* file;   // pointer to file object
   int   pageNo; // page within file
-  int	frameNo;  // frame # of frame
+  int	  frameNo;  // frame # of frame
   int   pinCnt; // number of times this page has been pinned
   bool 	dirty;	  // true if dirty;  false otherwise
   bool 	valid;   // true if page is valid
@@ -110,7 +110,7 @@ private:
   const void releaseBuf(int frame); // return unused frame to end of list
   void advanceClock()
   {
-	clockHand = (clockHand + 1) % numBufs;
+    clockHand = (clockHand + 1) % numBufs;
   }
 
 
