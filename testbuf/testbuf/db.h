@@ -35,6 +35,10 @@ class File {
       return fileName == other.fileName;
     }
 
+  string getFileName() const {
+    return fileName;
+  }
+  
  private: 
 
   File(const string &fname);                   // initialize

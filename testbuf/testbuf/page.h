@@ -49,7 +49,7 @@ private:
 public:
     void init(const int pageNo); // initialize a new page
     void dumpPage() const;       // dump contents of a page
-
+    void *getData() { return data;}
     const Status getNextPage(int& pageNo) const; // returns value of nextPage
     const Status setNextPage(const int pageNo); // sets value of nextPage to pageNo
     const short getFreeSpace() const; // returns amount of free space

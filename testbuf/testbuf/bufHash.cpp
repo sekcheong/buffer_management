@@ -49,6 +49,7 @@ BufHashTbl::~BufHashTbl()
 //---------------------------------------------------------------
 
 Status BufHashTbl::insert(const File* file, const int pageNo, const int frameNo) {
+  //cout << "insert: " << file->getFileName() << " " << pageNo << " " << frameNo << endl;
 
   int index = hash(file, pageNo);
 
@@ -78,8 +79,8 @@ Status BufHashTbl::insert(const File* file, const int pageNo, const int frameNo)
 // HASHNOTFOUND
 //-------------------------------------------------------------------
 
-Status BufHashTbl::lookup(const File* file, const int pageNo, int& frameNo) 
-  {
+Status BufHashTbl::lookup(const File* file, const int pageNo, int& frameNo)
+{
   int index = hash(file, pageNo);
   hashBucket* tmpBuc = ht[index];
   while (tmpBuc) {
@@ -100,6 +101,8 @@ Status BufHashTbl::lookup(const File* file, const int pageNo, int& frameNo)
 //-------------------------------------------------------------------
 
 Status BufHashTbl::remove(const File* file, const int pageNo) {
+
+ // cout << "remove: " << file->getFileName() << " " << pageNo << endl;
 
   int index = hash(file, pageNo);
   hashBucket* tmpBuc = ht[index];
