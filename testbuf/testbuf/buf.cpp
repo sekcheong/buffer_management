@@ -9,11 +9,11 @@
 #include "buf.h"
 
 #define ASSERT(c)  { if (!(c)) { \
-		       cerr << "At line " << __LINE__ << ":" << endl << "  "; \
-                       cerr << "This condition should hold: " #c << endl; \
-                       exit(1); \
-		     } \
-                   }
+cerr << "At line " << __LINE__ << ":" << endl << "  "; \
+cerr << "This condition should hold: " #c << endl; \
+exit(1); \
+} \
+}
 
 //----------------------------------------
 // Constructor of the class BufMgr
@@ -21,23 +21,23 @@
 
 BufMgr::BufMgr(const int bufs)
 {
-    numBufs = bufs;
-
-    bufTable = new BufDesc[bufs];
-    memset(bufTable, 0, bufs * sizeof(BufDesc));
-    for (int i = 0; i < bufs; i++) 
-    {
-        bufTable[i].frameNo = i;
-        bufTable[i].valid = false;
-    }
-
-    bufPool = new Page[bufs];
-    memset(bufPool, 0, bufs * sizeof(Page));
-
-    int htsize = ((((int) (bufs * 1.2))*2)/2)+1;
-    hashTable = new BufHashTbl (htsize);  // allocate the buffer hash table
-
-    clockHand = bufs - 1;
+  numBufs = bufs;
+  
+  bufTable = new BufDesc[bufs];
+  memset(bufTable, 0, bufs * sizeof(BufDesc));
+  for (int i = 0; i < bufs; i++)
+  {
+    bufTable[i].frameNo = i;
+    bufTable[i].valid = false;
+  }
+  
+  bufPool = new Page[bufs];
+  memset(bufPool, 0, bufs * sizeof(Page));
+  
+  int htsize = ((((int) (bufs * 1.2))*2)/2)+1;
+  hashTable = new BufHashTbl (htsize);  // allocate the buffer hash table
+  
+  clockHand = bufs - 1;
 }
 
 
@@ -53,7 +53,7 @@ BufMgr::~BufMgr() {
       }
     }
   }
-
+  
   delete hashTable;
   delete []bufPool;
   delete []bufTable;
@@ -62,7 +62,7 @@ BufMgr::~BufMgr() {
 
 const Status BufMgr::allocBuf(int &slot) {
   int pinCnt = 0;      //tracks the number of pages being pinned
-  int ticks = 0;       //tracks the number of ticks
+  int ticks = 0;       //tracks the number of ticks of the clock
   BufDesc *bd = 0;
   slot=-1;
   Status st;
@@ -72,7 +72,8 @@ const Status BufMgr::allocBuf(int &slot) {
     advanceClock();
     ticks++;
     
-    //if we already went through the buffer twice and couldn't find a free block
+    //if we went through the buffer pool twice and couldn't find a
+    //free block buffer, we return error
     if (ticks>2*numBufs) {
       return BUFFEREXCEEDED;
     }
@@ -92,11 +93,10 @@ const Status BufMgr::allocBuf(int &slot) {
     if (bd->pinCnt==0) {
       
       if (bd->dirty) {
-        //cout << "Writing: " << bd->file->getFileName() << " P:" << bd->pageNo << " [" << (char*) bufPool[bd->frameNo].getData() << "]" << endl;
         st = bd->file->writePage(bd->pageNo, &bufPool[bd->frameNo]);
         if (st!=OK) return st;
       }
-      
+      //since we evicted the page, the entry in the hash table is no longer valid
       st = hashTable->remove(bd->file, bd->pageNo);
       if (st!=OK) return st;
       
@@ -105,7 +105,7 @@ const Status BufMgr::allocBuf(int &slot) {
     }
     else {
       pinCnt++;
-      //all blocks are pinned?
+      //if all blocks are pinned, there is nothing we can do but return an error
       if (pinCnt==numBufs) {
         return BUFFEREXCEEDED;
       }
@@ -128,7 +128,8 @@ const Status BufMgr::readPage(File* file, const int PageNo, Page*& page) {
   int slot = 0;
   page = 0;
   Status st = hashTable->lookup(file, PageNo, slot);
-  
+  //if the page is in not in the buffer pool, we allocate the page and
+  //bring it into the buffer pool from disk
   if (st==HASHNOTFOUND) {
     st = this->allocBuf(slot);
     if (st!=OK) return st;
@@ -138,10 +139,10 @@ const Status BufMgr::readPage(File* file, const int PageNo, Page*& page) {
     st = file->readPage(PageNo, page);
     if (st!=OK) return st;
     bd->Set(file, PageNo);
-
+    
     st = hashTable->insert(file, PageNo, slot);
     if (st!=OK) return st;
-
+    
   }
   else {
     BufDesc *bd = &bufTable[slot];
@@ -171,12 +172,15 @@ const Status BufMgr::allocPage(File* file, int& pageNo, Page*& page)  {
   page = 0;
   Status st;
   
+  //allocate the page from disk
   st = file->allocatePage(newPage);
   if (st!=OK) return st;
   
+  //allocate the memory for the page
   st = this->allocBuf(newSlot);
   if (st!=OK) return st;
   
+  //associate the newly allocated page with the file and pageNo
   st = hashTable->insert(file, newPage, newSlot);
   if (st!=OK) return st;
   
@@ -185,7 +189,7 @@ const Status BufMgr::allocPage(File* file, int& pageNo, Page*& page)  {
   bd->Set(file, newPage);
   page = &bufPool[bd->frameNo];
   
-	return OK;
+  return OK;
 }
 
 
@@ -198,7 +202,7 @@ const Status BufMgr::disposePage(File* file, const int pageNo) {
   bd->Clear();
   st = hashTable->remove(file, pageNo);
   if (st!=OK) return st;
-	return OK;
+  return OK;
 }
 
 
@@ -209,6 +213,7 @@ const Status BufMgr::flushFile(const File* file) {
     if (!bd->valid) continue;
     if (bd->file!=file) continue;
     
+    //pinned page cannot be flused
     if (bd->pinCnt!=0) {
       return PAGEPINNED;
     }
@@ -220,24 +225,24 @@ const Status BufMgr::flushFile(const File* file) {
     if (st!=OK) return st;
     bd->Clear();
   }
-	return OK;
+  return OK;
 }
 
 
 void BufMgr::printSelf(void)
 {
-    BufDesc* tmpbuf;
+  BufDesc* tmpbuf;
   
-    cout << endl << "Print buffer...\n";
-    for (int i=0; i<numBufs; i++) {
-        tmpbuf = &(bufTable[i]);
-        cout << i << "\t" << (char*)(&bufPool[i]) 
-             << "\tpinCnt: " << tmpbuf->pinCnt;
+  cout << endl << "Print buffer...\n";
+  for (int i=0; i<numBufs; i++) {
+    tmpbuf = &(bufTable[i]);
+    cout << i << "\t" << (char*)(&bufPool[i])
+    << "\tpinCnt: " << tmpbuf->pinCnt;
     
-        if (tmpbuf->valid == true)
-            cout << "\tvalid\n";
-        cout << endl;
-    };
+    if (tmpbuf->valid == true)
+      cout << "\tvalid\n";
+    cout << endl;
+  };
 }
 
 
