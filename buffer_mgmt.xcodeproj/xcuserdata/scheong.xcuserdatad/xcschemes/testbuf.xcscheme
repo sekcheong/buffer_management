@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "37A749EA19FF094100CCF60C"
-               BuildableName = "testbuf"
-               BlueprintName = "testbuf"
-               ReferencedContainer = "container:testbuf.xcodeproj">
+               BuildableName = "buffer_mgmt"
+               BlueprintName = "buffer_mgmt"
+               ReferencedContainer = "container:buffer_mgmt.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "37A749EA19FF094100CCF60C"
-            BuildableName = "testbuf"
-            BlueprintName = "testbuf"
-            ReferencedContainer = "container:testbuf.xcodeproj">
+            BuildableName = "buffer_mgmt"
+            BlueprintName = "buffer_mgmt"
+            ReferencedContainer = "container:buffer_mgmt.xcodeproj">
          </BuildableReference>
       </MacroExpansion>
    </TestAction>
@@ -52,9 +52,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "37A749EA19FF094100CCF60C"
-            BuildableName = "testbuf"
-            BlueprintName = "testbuf"
-            ReferencedContainer = "container:testbuf.xcodeproj">
+            BuildableName = "buffer_mgmt"
+            BlueprintName = "buffer_mgmt"
+            ReferencedContainer = "container:buffer_mgmt.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
       <AdditionalOptions>
@@ -70,9 +70,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "37A749EA19FF094100CCF60C"
-            BuildableName = "testbuf"
-            BlueprintName = "testbuf"
-            ReferencedContainer = "container:testbuf.xcodeproj">
+            BuildableName = "buffer_mgmt"
+            BlueprintName = "buffer_mgmt"
+            ReferencedContainer = "container:buffer_mgmt.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>
